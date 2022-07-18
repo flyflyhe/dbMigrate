@@ -93,6 +93,11 @@ func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 	resultChan := make(chan map[string]interface{}, 100)
 	deleteChan := make(chan uint64, 100)
 	stopChan := make(chan struct{})
+	defer func() {
+		close(resultChan)
+		close(deleteChan)
+		close(stopChan)
+	}()
 	stopIndex := 2
 	go func() {
 		var result map[string]interface{}
