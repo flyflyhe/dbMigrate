@@ -90,13 +90,56 @@ func CreateTable(db0, db1 *gorm.DB, t0, t1 string) error {
 }
 
 func migrate(db0, db1 *gorm.DB, t0, t1 string) {
-	var result map[string]interface{}
+	resultChan := make(chan map[string]interface{}, 100)
+	go func() {
+		var result map[string]interface{}
+		var startId uint64
+		if err := db0.Table(t0).Limit(1).Take(&result).Error; err != nil {
+			log.Println(err)
+			return
+		} else {
+			if id, ok := result["id"]; !ok {
+				log.Println("不支持 无id自增表")
+			} else {
+				startId = GetId(id)
+			}
+		}
+		for {
+			if err := db0.Table(t0).Where("id >= ?", startId).Limit(1).Take(&result).Error; err != nil {
+				log.Println(err) //无数据时会输出错误
+				log.Println(result)
+				resultChan <- nil
+				break
+			} else {
+				resultChan <- result
+				startId = GetId(result["id"]) + 1
 
-	if err := db0.Table(t0).Limit(1).Take(&result).Error; err != nil {
-		log.Println(err)
+			}
+		}
+	}()
+
+	for {
+		select {
+		case result := <-resultChan:
+			if result == nil { //收到结束信息
+				return
+			}
+			if err := db1.Table(t1).Create(&result).Error; err != nil {
+				log.Println(err)
+			}
+		default:
+		}
+	}
+}
+
+func GetId(id interface{}) uint64 {
+	var startId uint64
+	switch id.(type) {
+	case uint64:
+		startId = id.(uint64)
+	case uint32:
+		startId = uint64(id.(uint32))
 	}
 
-	if err := db1.Table(t1).Create(&result).Error; err != nil {
-		log.Println(err)
-	}
+	return startId
 }
