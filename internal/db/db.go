@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"strings"
+	"sync"
 )
 
 var dbPoolObj *dbPool
@@ -92,13 +93,13 @@ func CreateTable(db0, db1 *gorm.DB, t0, t1 string) error {
 func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 	resultChan := make(chan map[string]interface{}, 100)
 	deleteChan := make(chan uint64, 100)
-	stopChan := make(chan struct{})
 	defer func() {
 		close(resultChan)
 		close(deleteChan)
-		close(stopChan)
 	}()
-	stopIndex := 2
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
 	go func() {
 		var result map[string]interface{}
 		var startId uint64
@@ -128,11 +129,11 @@ func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 	}()
 
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case result := <-resultChan:
 				if result == nil { //收到结束信息
-					stopChan <- struct{}{}
 					return
 				}
 				if err := db1.Table(t1).Create(&result).Error; err != nil {
@@ -144,11 +145,11 @@ func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 	}()
 
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case id := <-deleteChan:
 				if id == 0 { //收到结束信息
-					stopChan <- struct{}{}
 					return
 				}
 				if err := db0.Exec("delete from `"+t0+"` where id = ?", id).Error; err != nil {
@@ -159,17 +160,7 @@ func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 		}
 	}()
 
-	for {
-		select {
-		case <-stopChan:
-			if stopIndex == 1 {
-				return
-			} else {
-				stopIndex--
-			}
-		default:
-		}
-	}
+	wg.Wait()
 }
 
 func GetId(id interface{}) uint64 {
