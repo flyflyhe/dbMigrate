@@ -6,10 +6,10 @@ import (
 	"log"
 )
 
-//go:embed ../../trafficLog/dsn0.txt
+//go:embed dsn0.txt
 var dsn0 string
 
-//go:embed ../../trafficLog/dsn1.txt
+//go:embed dsn1.txt
 var dsn1 string
 
 func main() {
