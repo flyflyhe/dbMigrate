@@ -91,6 +91,9 @@ func CreateTable(db0, db1 *gorm.DB, t0, t1 string) error {
 
 func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 	resultChan := make(chan map[string]interface{}, 100)
+	deleteChan := make(chan uint64, 100)
+	stopChan := make(chan struct{})
+	stopIndex := 2
 	go func() {
 		var result map[string]interface{}
 		var startId uint64
@@ -109,23 +112,55 @@ func migrate(db0, db1 *gorm.DB, t0, t1 string) {
 				log.Println(err) //无数据时会输出错误
 				log.Println(result)
 				resultChan <- nil
+				deleteChan <- 0
 				break
 			} else {
 				resultChan <- result
+				deleteChan <- startId
 				startId = GetId(result["id"]) + 1
+			}
+		}
+	}()
 
+	go func() {
+		for {
+			select {
+			case result := <-resultChan:
+				if result == nil { //收到结束信息
+					stopChan <- struct{}{}
+					return
+				}
+				if err := db1.Table(t1).Create(&result).Error; err != nil {
+					log.Println(err)
+				}
+			default:
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case id := <-deleteChan:
+				if id == 0 { //收到结束信息
+					stopChan <- struct{}{}
+					return
+				}
+				if err := db0.Exec("delete from `"+t0+"` where id = ?", id).Error; err != nil {
+					log.Println(err)
+				}
+			default:
 			}
 		}
 	}()
 
 	for {
 		select {
-		case result := <-resultChan:
-			if result == nil { //收到结束信息
+		case <-stopChan:
+			if stopIndex == 1 {
 				return
-			}
-			if err := db1.Table(t1).Create(&result).Error; err != nil {
-				log.Println(err)
+			} else {
+				stopIndex--
 			}
 		default:
 		}
