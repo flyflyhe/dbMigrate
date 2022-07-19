@@ -17,7 +17,7 @@ type Task struct {
 	end      func(map[string]interface{}) bool                            //结束判断
 	next     func(map[string]interface{}) (map[string]interface{}, error) //迭代方法
 	delete   func(map[string]interface{}) error                           //delete 方法 未设置则不删除
-	create   func(map[string]interface{}) error                           //创建方法
+	create   func(map[string]interface{}) error                           //创建方法 不设置则不创建 控制变量可以实现先迁移再删除
 }
 
 func (task *Task) Dsn0() string {
@@ -177,8 +177,10 @@ func (task *Task) Migrate() error {
 				if result == nil { //收到结束信息
 					return
 				}
-				if err := task.create(result); err != nil {
-					log.Println(err)
+				if task.create != nil {
+					if err := task.create(result); err != nil {
+						log.Println(err)
+					}
 				}
 			default:
 			}
