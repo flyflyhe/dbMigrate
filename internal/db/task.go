@@ -1,10 +1,117 @@
 package db
 
 import (
+	"errors"
 	"gorm.io/gorm"
 	"log"
+	"strings"
 	"sync"
 )
+
+type TaskConfig struct {
+	dsn0           string
+	dsn1           string
+	t0             string
+	t1             string
+	dsnType0       string
+	dsnType1       string
+	startCondition map[string][]interface{}
+	startFuncType  string //default
+	nextFuncType   string //id
+	nextKey        string
+	endFuncType    string //id  created
+	endKey         string
+	endVal         interface{}
+	task           *Task
+}
+
+func (task *Task) SetFuncByConfig(config *TaskConfig) {
+	task.SetStart(func() (map[string]interface{}, error) {
+		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		var result map[string]interface{}
+
+		if config.startFuncType == "default" {
+			if err = conn.Table(task.T0()).Limit(1).Take(&result).Error; err != nil {
+				log.Println(err)
+				return nil, err
+			}
+		} else {
+			var where string
+			var val []interface{}
+			for where, val = range config.startCondition {
+				break
+			}
+			if err = conn.Table(task.T0()).Where(where, val...).Limit(1).Take(&result).Error; err != nil {
+				log.Println(err)
+				return nil, err
+			}
+		}
+
+		return result, nil
+	})
+
+	task.SetNext(func(m map[string]interface{}) (map[string]interface{}, error) {
+		if m == nil {
+			return nil, errors.New("无数据了")
+		}
+		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		var result map[string]interface{}
+
+		if config.nextFuncType == "id" {
+			if err := conn.Table(task.T0()).Where(config.nextKey+" > ?", m[config.nextKey]).Limit(1).Take(&result).Error; err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("暂不支持")
+		}
+
+		return result, nil
+	})
+
+	task.SetEnd(func(m map[string]interface{}) bool {
+		if config.endFuncType == "id" {
+			endVal := GetId(config.endVal)
+			id := GetId(m[config.endKey])
+			return id >= endVal
+		} else if config.startFuncType == "datetime" {
+			endVal := config.endVal.(string)
+			return strings.Compare(endVal, m[config.endKey].(string)) >= 0
+		}
+		return false
+	})
+
+	task.SetCreate(func(m map[string]interface{}) error {
+		conn, err := task.GetDb(task.Dsn1(), task.DsnType1())
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return conn.Table(task.T1()).Create(&m).Error
+	})
+
+	task.SetDelete(func(m map[string]interface{}) error {
+		if m == nil {
+			return errors.New("无数据")
+		}
+		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		return conn.Table(task.t0).Delete(m).Error
+	})
+}
 
 type Task struct {
 	dsn0     string
