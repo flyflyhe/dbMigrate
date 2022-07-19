@@ -56,5 +56,14 @@ func main() {
 		return result, nil
 	})
 
+	task.SetCreate(func(m map[string]interface{}) error {
+		conn, err := task.GetDb(task.Dsn1(), task.DsnType1())
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return conn.Table(task.T1()).Create(&m).Error
+	})
+
 	log.Println(task.Migrate())
 }

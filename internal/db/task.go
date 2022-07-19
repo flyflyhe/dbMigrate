@@ -17,6 +17,7 @@ type Task struct {
 	end      func(map[string]interface{}) bool                            //结束判断
 	next     func(map[string]interface{}) (map[string]interface{}, error) //迭代方法
 	delete   func(map[string]interface{}) error                           //delete 方法 未设置则不删除
+	create   func(map[string]interface{}) error                           //创建方法
 }
 
 func (task *Task) Dsn0() string {
@@ -94,11 +95,15 @@ func (task *Task) SetDelete(delete func(map[string]interface{}) error) {
 	task.delete = delete
 }
 
+func (task *Task) SetCreate(create func(map[string]interface{}) error) {
+	task.create = create
+}
+
 func (task *Task) GetDb(dsn, dsnType string) (*gorm.DB, error) {
 	return GetDb(dsn, dsnType)
 }
 
-func (task *Task) Migrate() error {
+func (task *Task) checkTable() error {
 	db0, err := task.GetDb(task.dsn0, task.dsnType0)
 	if err != nil {
 		return err
@@ -111,6 +116,13 @@ func (task *Task) Migrate() error {
 		if err := CreateTable(db0, db1, task.t0, task.t1); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (task *Task) Migrate() error {
+	if err := task.checkTable(); err != nil {
+		return err
 	}
 
 	resultChan := make(chan map[string]interface{}, 100)
@@ -165,7 +177,7 @@ func (task *Task) Migrate() error {
 				if result == nil { //收到结束信息
 					return
 				}
-				if err := db1.Table(task.t1).Create(&result).Error; err != nil {
+				if err := task.create(result); err != nil {
 					log.Println(err)
 				}
 			default:
