@@ -21,5 +21,5 @@ task:
 
 ```azure
 执行
-./dbMigrate -y=config.yam.
+./dbMigrate -y=config.yaml
 ```
