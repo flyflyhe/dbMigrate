@@ -9,6 +9,7 @@ import (
 )
 
 var dbPoolObj *dbPool
+var lock sync.Mutex
 
 type dbPool struct {
 	mysql      map[string]*gorm.DB
@@ -37,6 +38,8 @@ func GetDb(dsn string, dsnType string) (*gorm.DB, error) {
 		if db, ok := dbPoolObj.mysql[dsn]; ok {
 			return db, err
 		} else {
+			lock.Lock()
+			defer lock.Unlock()
 			db, err = gorm.Open(mysql.New(mysql.Config{
 				DSN:                       dsn,   // data source name
 				DefaultStringSize:         10,    // default size for string fields
