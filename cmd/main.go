@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
+	"sync"
 )
 
 var yamlFile string
@@ -24,13 +25,20 @@ func main() {
 				} else {
 					log.Println(taskExternalConfigList)
 
-					for _, v := range taskExternalConfigList {
+					wg := sync.WaitGroup{}
+					wg.Add(len(taskExternalConfigList))
+					for k, v := range taskExternalConfigList {
+						log.Println("任务", k, "--", v.T0, "===>", v.T1)
 						task := db.CreateTask(v.Dsn0, v.Dsn1, v.T0, v.T1, v.DsnType0, v.DsnType1)
 						taskConfig := db.CreateTaskConfigByEConfig(v)
 
-						task.SetFuncByConfig(taskConfig)
-						log.Println(task.Migrate())
+						go func() {
+							defer wg.Done()
+							task.SetFuncByConfig(taskConfig)
+							log.Println(task.Migrate())
+						}()
 					}
+					wg.Wait()
 				}
 			}
 		},

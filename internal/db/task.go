@@ -290,6 +290,10 @@ func (task *Task) Migrate() error {
 			return
 		}
 
+		if task.end != nil && task.end(result) {
+			stopFunc()
+			return
+		}
 		sendResult(result)
 
 		for {
