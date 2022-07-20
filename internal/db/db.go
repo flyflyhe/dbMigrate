@@ -3,7 +3,6 @@ package db
 import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 	"strings"
 	"sync"
 )
@@ -57,25 +56,6 @@ func GetDb(dsn string, dsnType string) (*gorm.DB, error) {
 	return nil, nil
 }
 
-func Migrate(dsn0, dsn1 string, t0, t1 string, dsnType0, dsnType1 string) error {
-	db0, err := GetDb(dsn0, dsnType0)
-	if err != nil {
-		return err
-	}
-	db1, err := GetDb(dsn1, dsnType1)
-	if err != nil {
-		return err
-	}
-	if !db1.Migrator().HasTable(t1) {
-		if err := CreateTable(db0, db1, t0, t1); err != nil {
-			return err
-		}
-	}
-
-	migrate(db0, db1, t0, t1)
-	return nil
-}
-
 func CreateTable(db0, db1 *gorm.DB, t0, t1 string) error {
 	var result map[string]interface{}
 	if err := db0.Raw("show create table " + t0).Take(&result).Error; err != nil {
@@ -91,79 +71,6 @@ func CreateTable(db0, db1 *gorm.DB, t0, t1 string) error {
 	}
 
 	return nil
-}
-
-func migrate(db0, db1 *gorm.DB, t0, t1 string) {
-	resultChan := make(chan map[string]interface{}, 100)
-	deleteChan := make(chan uint64, 100)
-	defer func() {
-		close(resultChan)
-		close(deleteChan)
-	}()
-
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		var result map[string]interface{}
-		var startId uint64
-		if err := db0.Table(t0).Limit(1).Take(&result).Error; err != nil {
-			log.Println(err)
-			return
-		} else {
-			if id, ok := result["id"]; !ok {
-				log.Println("不支持 无id自增表")
-			} else {
-				startId = GetId(id)
-			}
-		}
-		for {
-			if err := db0.Table(t0).Where("id >= ?", startId).Limit(1).Take(&result).Error; err != nil {
-				log.Println(err) //无数据时会输出错误
-				log.Println(result)
-				resultChan <- nil
-				deleteChan <- 0
-				break
-			} else {
-				resultChan <- result
-				deleteChan <- startId
-				startId = GetId(result["id"]) + 1
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case result := <-resultChan:
-				if result == nil { //收到结束信息
-					return
-				}
-				if err := db1.Table(t1).Create(&result).Error; err != nil {
-					log.Println(err)
-				}
-			default:
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case id := <-deleteChan:
-				if id == 0 { //收到结束信息
-					return
-				}
-				if err := db0.Exec("delete from `"+t0+"` where id = ?", id).Error; err != nil {
-					log.Println(err)
-				}
-			default:
-			}
-		}
-	}()
-
-	wg.Wait()
 }
 
 func GetId(id interface{}) uint64 {
