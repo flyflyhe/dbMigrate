@@ -170,6 +170,10 @@ func GetId(id interface{}) uint64 {
 		startId = id.(uint64)
 	case uint32:
 		startId = uint64(id.(uint32))
+	case int:
+		startId = uint64(id.(int))
+	case uint:
+		startId = uint64(id.(uint))
 	}
 
 	return startId

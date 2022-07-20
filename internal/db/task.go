@@ -8,21 +8,29 @@ import (
 	"sync"
 )
 
+const (
+	startFuncTypeCustom  = 1
+	startFuncTypeDefault = 2
+
+	nextFuncTypeCustom = 1
+	nextFuncTypeId     = 2
+
+	endFuncTypeCustom   = 1
+	endFuncTypeId       = 2
+	endFuncTypeDatetime = 3
+)
+
 type TaskConfig struct {
-	dsn0           string
-	dsn1           string
-	t0             string
-	t1             string
-	dsnType0       string
-	dsnType1       string
 	startCondition map[string][]interface{}
-	startFuncType  string //default
-	nextFuncType   string //id
-	nextKey        string
-	endFuncType    string //id  created
+	startFuncType  int    //default
+	nextFuncType   int    //id
+	nextKey        string //id
+	endFuncType    int    //id  datetime
 	endKey         string
 	endVal         interface{}
+	deleteKey      string
 	task           *Task
+	created        bool
 }
 
 func (task *Task) SetFuncByConfig(config *TaskConfig) {
@@ -35,12 +43,12 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 
 		var result map[string]interface{}
 
-		if config.startFuncType == "default" {
+		if config.startFuncType == startFuncTypeDefault {
 			if err = conn.Table(task.T0()).Limit(1).Take(&result).Error; err != nil {
 				log.Println(err)
 				return nil, err
 			}
-		} else {
+		} else if config.startFuncType == startFuncTypeCustom {
 			var where string
 			var val []interface{}
 			for where, val = range config.startCondition {
@@ -67,7 +75,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 
 		var result map[string]interface{}
 
-		if config.nextFuncType == "id" {
+		if config.nextFuncType == nextFuncTypeId {
 			if err := conn.Table(task.T0()).Where(config.nextKey+" > ?", m[config.nextKey]).Limit(1).Take(&result).Error; err != nil {
 				return nil, err
 			}
@@ -75,42 +83,50 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 			return nil, errors.New("暂不支持")
 		}
 
+		log.Println("next", result)
 		return result, nil
 	})
 
-	task.SetEnd(func(m map[string]interface{}) bool {
-		if config.endFuncType == "id" {
-			endVal := GetId(config.endVal)
-			id := GetId(m[config.endKey])
-			return id >= endVal
-		} else if config.startFuncType == "datetime" {
-			endVal := config.endVal.(string)
-			return strings.Compare(endVal, m[config.endKey].(string)) >= 0
-		}
-		return false
-	})
+	if config.endFuncType != 0 {
+		task.SetEnd(func(m map[string]interface{}) bool {
+			if config.endFuncType == endFuncTypeId {
+				endVal := GetId(config.endVal)
+				id := GetId(m[config.endKey])
+				return id >= endVal
+			} else if config.startFuncType == endFuncTypeDatetime {
+				endVal := config.endVal.(string)
+				return strings.Compare(endVal, m[config.endKey].(string)) >= 0
+			}
+			return false
+		})
+	}
 
-	task.SetCreate(func(m map[string]interface{}) error {
-		conn, err := task.GetDb(task.Dsn1(), task.DsnType1())
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		return conn.Table(task.T1()).Create(&m).Error
-	})
+	if config.created {
+		task.SetCreate(func(m map[string]interface{}) error {
+			log.Println("create", m)
+			conn, err := task.GetDb(task.Dsn1(), task.DsnType1())
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			return conn.Table(task.T1()).Create(&m).Error
+		})
+	}
 
-	task.SetDelete(func(m map[string]interface{}) error {
-		if m == nil {
-			return errors.New("无数据")
-		}
-		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+	if config.deleteKey != "" {
+		task.SetDelete(func(m map[string]interface{}) error {
+			if m == nil {
+				return errors.New("无数据")
+			}
+			conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
+			if err != nil {
+				log.Println(err)
+				return err
+			}
 
-		return conn.Table(task.t0).Delete(m).Error
-	})
+			return conn.Table(task.t0).Where(config.deleteKey+" = ?", m[config.deleteKey]).Delete(m).Error
+		})
+	}
 }
 
 type Task struct {
@@ -268,6 +284,7 @@ func (task *Task) Migrate() error {
 				break
 			} else {
 				if task.end != nil && task.end(result) {
+					log.Println("end", result)
 					stopFunc()
 					break
 				}
