@@ -1,9 +1,10 @@
 package db
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
-	"log"
 	"strings"
 	"sync"
 )
@@ -50,7 +51,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 	task.SetStart(func() (map[string]interface{}, error) {
 		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
 		if err != nil {
-			log.Println(err)
+			log.Error().Caller().Err(err).Send()
 			return nil, err
 		}
 
@@ -58,7 +59,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 
 		if config.startFuncType == startFuncTypeDefault {
 			if err = conn.Table(task.T0()).Limit(1).Debug().Take(&result).Error; err != nil {
-				log.Println(err)
+				log.Error().Caller().Err(err).Send()
 				return nil, err
 			}
 		} else if config.startFuncType == startFuncTypeCustom {
@@ -68,12 +69,13 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 				break
 			}
 			if err = conn.Table(task.T0()).Where(where, val...).Limit(1).Debug().Take(&result).Error; err != nil {
-				log.Println(err)
+				log.Error().Caller().Err(err).Send()
 				return nil, err
 			}
 		}
 
-		log.Println(result)
+		resultBytes, _ := json.Marshal(result)
+		log.Debug().Caller().RawJSON("start", resultBytes).Send()
 		return result, nil
 	})
 
@@ -83,7 +85,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 		}
 		conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
 		if err != nil {
-			log.Println(err)
+			log.Error().Caller().Err(err).Send()
 			return nil, err
 		}
 
@@ -97,7 +99,8 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 			return nil, errors.New("暂不支持")
 		}
 
-		log.Println("next", result)
+		resultBytes, _ := json.Marshal(result)
+		log.Debug().Caller().RawJSON("next", resultBytes)
 		return result, nil
 	})
 
@@ -117,10 +120,11 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 
 	if config.created {
 		task.SetCreate(func(m map[string]interface{}) error {
-			log.Println("create", m)
+			resultBytes, _ := json.Marshal(m)
+			log.Debug().Caller().RawJSON("next", resultBytes)
 			conn, err := task.GetDb(task.Dsn1(), task.DsnType1())
 			if err != nil {
-				log.Println(err)
+				log.Error().Caller().Err(err).Send()
 				return err
 			}
 			return conn.Table(task.T1()).Create(&m).Error
@@ -134,7 +138,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 			}
 			conn, err := task.GetDb(task.Dsn0(), task.DsnType0())
 			if err != nil {
-				log.Println(err)
+				log.Error().Caller().Err(err).Send()
 				return err
 			}
 
@@ -286,11 +290,14 @@ func (task *Task) Migrate() error {
 		var result map[string]interface{}
 		result, err = task.start() //start 返回数据 作为next的条件
 		if err != nil {
+			log.Error().Caller().Err(err).Send()
 			stopFunc()
 			return
 		}
 
 		if task.end != nil && task.end(result) {
+			resultBytes, _ := json.Marshal(result)
+			log.Debug().Caller().RawJSON("end", resultBytes).Send()
 			stopFunc()
 			return
 		}
@@ -298,12 +305,14 @@ func (task *Task) Migrate() error {
 
 		for {
 			if result, err = task.next(result); err != nil {
-				log.Println(err) //无数据时会输出错误
+				log.Error().Caller().Err(err).Send()
+				//无数据时会输出错误
 				stopFunc()
 				break
 			} else {
 				if task.end != nil && task.end(result) {
-					log.Println("end", result)
+					resultBytes, _ := json.Marshal(result)
+					log.Debug().Caller().RawJSON("end", resultBytes).Send()
 					stopFunc()
 					break
 				}
@@ -322,7 +331,7 @@ func (task *Task) Migrate() error {
 				}
 				if task.create != nil {
 					if err := task.create(result); err != nil {
-						log.Println(err)
+						log.Error().Caller().Err(err).Send()
 					}
 				}
 			default:
@@ -340,7 +349,7 @@ func (task *Task) Migrate() error {
 				}
 				if task.delete != nil {
 					if err := task.delete(result); err != nil {
-						log.Println(err)
+						log.Error().Caller().Err(err)
 					}
 				}
 			default:

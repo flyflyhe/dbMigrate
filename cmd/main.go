@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/flyflyhe/dbMigrate/internal/db"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
@@ -9,12 +10,18 @@ import (
 )
 
 var yamlFile string
+var debug bool
 
 func main() {
 	command := cobra.Command{
 		Use:              "dbMigrate -c=config.yaml",
 		TraverseChildren: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Default level for this example is info, unless debug flag is present
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+			if debug {
+				zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			}
 			if yamlFileBytes, err := ioutil.ReadFile(yamlFile); err != nil {
 				log.Println(err)
 				return
@@ -45,6 +52,7 @@ func main() {
 	}
 
 	command.Flags().StringVarP(&yamlFile, "yaml", "y", "config.yaml", "yaml config file")
+	command.Flags().BoolVarP(&debug, "debug", "d", false, "是否开启debug")
 	_ = command.MarkFlagRequired("yaml")
 	if err := command.Execute(); err != nil {
 		log.Println(err)
