@@ -1,5 +1,6 @@
 ```azure
 数据迁移工具
+make build
 ```
 ```azure
 配置样例
