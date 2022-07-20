@@ -1,0 +1,6 @@
+startConditionVal: &startConditionVal
+  - 1
+startCondition: &startCondition
+  {"id > ?":*startConditionVal}
+task:
+    - {"dsn0":"dddddd","t0":"user","dsnType0":"","dsn1":"","t1":"","dsnType1":"","startFuncType":1,"startCondition": *startCondition,"nextFuncType":2,"nextKey":"id"}
