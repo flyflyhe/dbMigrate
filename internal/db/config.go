@@ -7,7 +7,7 @@ import (
 )
 
 //go:embed config.yaml
-var taskYaml string
+var TaskYaml string
 
 type TaskExternalConfig struct {
 	Dsn0           string                   `yaml:"dsn0"`
@@ -24,18 +24,15 @@ type TaskExternalConfig struct {
 	EndKey         string                   `yaml:"endKey"`
 	EndVal         interface{}              `yaml:"endVal"`
 	DeleteKey      string                   `yaml:"deleteKey"`
-	Task           *Task                    `yaml:"task"`
 	Created        bool                     `yaml:"created"`
 }
 
-func GetConfig() (taskExternalConfigList []*TaskExternalConfig, err error) {
+func GetConfig(yamlBytes []byte) (taskExternalConfigList []*TaskExternalConfig, err error) {
 	m := make(map[interface{}]interface{})
-	if err = yaml.Unmarshal([]byte(taskYaml), &m); err != nil {
+	if err = yaml.Unmarshal(yamlBytes, &m); err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
-	log.Println(m["task"])
 
 	var taskYamlBytes []byte
 	if taskYamlBytes, err = yaml.Marshal(m["task"]); err != nil {
@@ -48,6 +45,5 @@ func GetConfig() (taskExternalConfigList []*TaskExternalConfig, err error) {
 		log.Println(err)
 		return nil, err
 	}
-	log.Println(taskExternalConfigList[0].Dsn0)
 	return
 }

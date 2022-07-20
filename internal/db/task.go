@@ -29,8 +29,21 @@ type TaskConfig struct {
 	endKey         string
 	endVal         interface{}
 	deleteKey      string
-	task           *Task
 	created        bool
+}
+
+func CreateTaskConfigByEConfig(eConfig *TaskExternalConfig) *TaskConfig {
+	return &TaskConfig{
+		startCondition: eConfig.StartCondition,
+		startFuncType:  eConfig.StartFuncType,
+		nextFuncType:   eConfig.NextFuncType,
+		nextKey:        eConfig.NextKey,
+		endFuncType:    eConfig.EndFuncType,
+		endKey:         eConfig.EndKey,
+		endVal:         eConfig.EndVal,
+		deleteKey:      eConfig.DeleteKey,
+		created:        eConfig.Created,
+	}
 }
 
 func (task *Task) SetFuncByConfig(config *TaskConfig) {
@@ -44,7 +57,7 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 		var result map[string]interface{}
 
 		if config.startFuncType == startFuncTypeDefault {
-			if err = conn.Table(task.T0()).Limit(1).Take(&result).Error; err != nil {
+			if err = conn.Table(task.T0()).Limit(1).Debug().Take(&result).Error; err != nil {
 				log.Println(err)
 				return nil, err
 			}
@@ -54,12 +67,13 @@ func (task *Task) SetFuncByConfig(config *TaskConfig) {
 			for where, val = range config.startCondition {
 				break
 			}
-			if err = conn.Table(task.T0()).Where(where, val...).Limit(1).Take(&result).Error; err != nil {
+			if err = conn.Table(task.T0()).Where(where, val...).Limit(1).Debug().Take(&result).Error; err != nil {
 				log.Println(err)
 				return nil, err
 			}
 		}
 
+		log.Println(result)
 		return result, nil
 	})
 
@@ -265,8 +279,9 @@ func (task *Task) Migrate() error {
 		deleteChan <- result
 	}
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
+		defer wg.Done()
 		var err error
 		var result map[string]interface{}
 		result, err = task.start() //start 返回数据 作为next的条件

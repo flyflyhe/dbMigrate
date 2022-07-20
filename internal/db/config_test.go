@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetConfig(t *testing.T) {
-	if l, err := GetConfig(); err != nil {
+	if l, err := GetConfig([]byte(TaskYaml)); err != nil {
 		t.Error(err)
 	} else {
 		m, _ := json.Marshal(l)
