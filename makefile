@@ -1,7 +1,7 @@
 .PHONY: clean
 clean:
 	rm -rf ./build/
-.PHONY: build #打包字体 证书
+.PHONY: build
 build:
 	go build -o=./build/dbMigrate cmd/main.go
 	CGO_ENABLED=0  GOOS=linux  GOARCH=amd64  go build  -o=./build/dbMigrate_linux cmd/main.go
