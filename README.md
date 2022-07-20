@@ -1,8 +1,8 @@
-```azure
+```text
 数据迁移工具
 make build
 ```
-```azure
+```yaml
 配置样例
 dsn0: &dsn0
   "user:pasword@(10.0.0.203:3306)/hezi?charset=utf8&parseTime=True&loc=Local"
@@ -19,7 +19,7 @@ task:
     }
 ```
 
-```azure
+```text
 执行
 ./dbMigrate -y=config.yaml
 ```
