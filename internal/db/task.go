@@ -334,6 +334,8 @@ func (task *Task) Migrate() error {
 					} else {
 						deleteChan <- result
 					}
+				} else {
+					deleteChan <- result
 				}
 			default:
 			}
