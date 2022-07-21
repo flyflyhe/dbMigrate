@@ -2,6 +2,8 @@ package db
 
 import (
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"strings"
 	"sync"
@@ -49,6 +51,33 @@ func GetDb(dsn string, dsnType string) (*gorm.DB, error) {
 			}))
 
 			dbPoolObj.mysql[dsn] = db
+			return db, err
+		}
+	} else if dsnType == "sqlserver" {
+		if db, ok := dbPoolObj.sqlserver[dsn]; ok {
+			return db, err
+		} else {
+			lock.Lock()
+			defer lock.Unlock()
+			db, err = gorm.Open(sqlserver.New(sqlserver.Config{
+				DSN:               dsn,
+				DefaultStringSize: 10,
+			}))
+
+			dbPoolObj.sqlserver[dsn] = db
+			return db, err
+		}
+	} else if dsnType == "postgresql" {
+		if db, ok := dbPoolObj.postgresql[dsn]; ok {
+			return db, err
+		} else {
+			lock.Lock()
+			defer lock.Unlock()
+			db, err = gorm.Open(postgres.New(postgres.Config{
+				DSN: dsn,
+			}))
+
+			dbPoolObj.postgresql[dsn] = db
 			return db, err
 		}
 	}
