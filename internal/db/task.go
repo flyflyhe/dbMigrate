@@ -275,12 +275,10 @@ func (task *Task) Migrate() error {
 
 	stopFunc := func() {
 		resultChan <- nil
-		deleteChan <- nil
 	}
 
 	sendResult := func(result map[string]interface{}) {
 		resultChan <- result
-		deleteChan <- result
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -327,11 +325,14 @@ func (task *Task) Migrate() error {
 			select {
 			case result := <-resultChan:
 				if result == nil { //收到结束信息
+					deleteChan <- nil
 					return
 				}
 				if task.create != nil {
 					if err := task.create(result); err != nil {
 						log.Error().Caller().Err(err).Send()
+					} else {
+						deleteChan <- result
 					}
 				}
 			default:
