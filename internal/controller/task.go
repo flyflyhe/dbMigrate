@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/flyflyhe/dbMigrate/internal/db"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -20,5 +21,11 @@ func (this *task) List(c *gin.Context) {
 }
 
 func (this *task) Create(c *gin.Context) {
-	this.Success("hi!", c)
+	var task db.TaskExternalConfig
+	if err := c.ShouldBindJSON(&task); err != nil {
+		this.Failed(err.Error(), c)
+		return
+	}
+
+	this.Success(task, c)
 }
