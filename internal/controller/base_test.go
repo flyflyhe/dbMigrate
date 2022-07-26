@@ -1,7 +1,7 @@
 package controller
 
-import "testing"
-
-func TestStart(t *testing.T) {
-	Start(":8080")
+func init() {
+	go func() {
+		Start(":8080")
+	}()
 }
