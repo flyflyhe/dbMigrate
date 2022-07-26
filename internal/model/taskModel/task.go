@@ -64,6 +64,10 @@ func (task *Task) GetDb() (*gorm.DB, error) {
 	return store.GetDefaultDb()
 }
 
+func (task *Task) PrimaryKey() int64 {
+	return task.ID
+}
+
 func (task *Task) GetConfig() (*db.TaskExternalConfig, error) {
 	config := &db.TaskExternalConfig{}
 
