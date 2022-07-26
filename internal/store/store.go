@@ -15,7 +15,7 @@ type DbManger struct {
 }
 
 func init() {
-	defaultManger = &DbManger{path: "./migrate.db"}
+	defaultManger = &DbManger{path: "/tmp/migrate.db"}
 }
 
 func GetDefaultDb() (*gorm.DB, error) {

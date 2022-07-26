@@ -24,14 +24,14 @@ func SetRoute(config *routeConfig) {
 	routeDepository = append(routeDepository, config)
 }
 
-type base struct {
+type Base struct {
 }
 
-func (this *base) Success(data any, c *gin.Context) {
+func (this *Base) Success(data any, c *gin.Context) {
 	c.JSON(200, data)
 }
 
-func (this *base) Failed(msg string, c *gin.Context) {
+func (this *Base) Failed(msg string, c *gin.Context) {
 	c.JSON(500, gin.H{"err": msg})
 }
 

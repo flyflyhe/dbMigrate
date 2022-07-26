@@ -2,12 +2,15 @@ package controller
 
 import (
 	"github.com/flyflyhe/dbMigrate/internal/db"
+	"github.com/flyflyhe/dbMigrate/internal/model"
+	"github.com/flyflyhe/dbMigrate/internal/model/taskModel"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
 type task struct {
-	base
+	Base
 }
 
 func init() {
@@ -17,15 +20,36 @@ func init() {
 }
 
 func (this *task) List(c *gin.Context) {
-	this.Success("hi list!", c)
+	tModel := &taskModel.Task{}
+	conn, err := tModel.GetDb()
+	if err != nil {
+		this.Failed("数据链接异常", c)
+		log.Error().Caller().Err(err).Send()
+		return
+	}
+	var tModelList []*taskModel.Task
+	if err := conn.Table(tModel.TableName()).Find(&tModelList).Error; err != nil {
+		this.Failed("数据链接异常", c)
+		log.Error().Caller().Err(err).Send()
+	}
+	this.Success(tModelList, c)
 }
 
 func (this *task) Create(c *gin.Context) {
-	var task db.TaskExternalConfig
-	if err := c.ShouldBindJSON(&task); err != nil {
+	var taskConfig *db.TaskExternalConfig
+	var err error
+	if err = c.ShouldBindJSON(&taskConfig); err != nil {
 		this.Failed(err.Error(), c)
+		log.Error().Caller().Err(err).Send()
 		return
 	}
 
-	this.Success(task, c)
+	tModel := taskModel.CreateTaskByConfig(taskConfig)
+
+	if err = model.Create(tModel); err != nil {
+		this.Failed(err.Error(), c)
+		log.Error().Caller().Err(err).Send()
+		return
+	}
+	this.Success(tModel, c)
 }
