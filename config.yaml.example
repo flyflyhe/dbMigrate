@@ -1,0 +1,19 @@
+log:
+  debug: false
+  info:
+    filename: "./logs/info.log"
+  error:
+    filename: "./logs/error.log"
+dbConfig:
+  mysql0:
+    user: "crud"
+    port: 3306
+    password: "123456"
+    host: "127.0.0.1"
+    database: "tax"
+  mysql1:
+    user: "crud"
+    port: 3306
+    password: "123456"
+    host: "127.0.0.1"
+    database: "tax"
