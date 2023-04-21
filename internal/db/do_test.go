@@ -18,7 +18,7 @@ func TestWrapper_AllTables(t *testing.T) {
 	}
 
 	w := &Wrapper{db0}
-	if result, err := w.AllTables(config.GetApp().DbConfig.Mysql0.Database); err != nil {
+	if result, err := w.AllTables(); err != nil {
 		t.Error(err)
 	} else {
 		t.Log(result)
@@ -46,8 +46,7 @@ func TestWrapper_ChangeDDL(t *testing.T) {
 	if result, err := w0.TableSchema("person"); err != nil {
 		t.Error(err)
 	} else {
-		ddl := result["Create Table"]
-		nDDL := w0.ChangeDDL("person", "person1", ddl.(string))
+		nDDL := w0.ChangeDDL("person", "person1", result)
 		t.Log(nDDL)
 	}
 }
