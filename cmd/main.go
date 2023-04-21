@@ -5,7 +5,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -23,7 +23,7 @@ func main() {
 			if debug {
 				zerolog.SetGlobalLevel(zerolog.DebugLevel)
 			}
-			if yamlFileBytes, err := ioutil.ReadFile(yamlFile); err != nil {
+			if yamlFileBytes, err := os.ReadFile(yamlFile); err != nil {
 				log.Error().Caller().Err(err).Send()
 				return
 			} else {
