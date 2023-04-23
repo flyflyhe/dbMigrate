@@ -11,6 +11,21 @@ func init() {
 	config.InitConfig("../../config.yaml")
 }
 
+func TestWrapper_TableColumns(t *testing.T) {
+	db0, err := connection.InitDb(config.GetApp().DbConfig.Mysql0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	w := &Wrapper{db0}
+	if result, err := w.TableColumns(config.GetApp().DbConfig.Mysql0.Database, "log"); err != nil {
+		t.Error(err)
+	} else {
+		fmt.Println(result)
+		t.Log(result)
+	}
+}
+
 func TestWrapper_AllTables(t *testing.T) {
 	db0, err := connection.InitDb(config.GetApp().DbConfig.Mysql0)
 	if err != nil {

@@ -16,6 +16,7 @@ var (
 func main() {
 	flag.StringVar(&configPath, "c", "config.yaml", "配置文件")
 
+	flag.Parse()
 	config.InitConfig(configPath)
 	logging.InitLogger(config.GetApp().Log)
 

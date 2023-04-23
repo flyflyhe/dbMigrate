@@ -11,8 +11,23 @@ type Wrapper struct {
 	*gorm.DB
 }
 
+type Columns struct {
+	TableName  string
+	ColumnName string
+	DataType   string
+	IsNullable string
+}
+
 func (w *Wrapper) AllTables() ([]string, error) {
 	return w.Debug().Migrator().GetTables()
+}
+
+func (w *Wrapper) TableColumns(database, table string) ([]Columns, error) {
+	var columns []Columns
+	sql := "SELECT COLUMN_NAME as ColumnName, TABLE_NAME as TableName, DATA_TYPE as DataType, IS_NULLABLE as IsNullable  FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
+	err := w.Raw(sql, database, table).Scan(&columns).Error
+
+	return columns, err
 }
 
 func (w *Wrapper) TableSchema(table string) (string, error) {
@@ -71,5 +86,5 @@ func (w *Wrapper) ScanDataByTable(table string) chan map[string]interface{} {
 }
 
 func (w *Wrapper) BatchInsert(table string, data []map[string]interface{}) error {
-	return w.Debug().Table(table).CreateInBatches(data, 100).Error
+	return w.Table(table).CreateInBatches(data, 100).Error
 }
