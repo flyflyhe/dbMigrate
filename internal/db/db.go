@@ -19,7 +19,7 @@ type Columns struct {
 }
 
 func (w *Wrapper) AllTables() ([]string, error) {
-	return w.Debug().Migrator().GetTables()
+	return w.Migrator().GetTables()
 }
 
 func (w *Wrapper) TableColumns(database, table string) ([]Columns, error) {
@@ -32,7 +32,7 @@ func (w *Wrapper) TableColumns(database, table string) ([]Columns, error) {
 
 func (w *Wrapper) TableSchema(table string) (string, error) {
 	var result map[string]interface{}
-	if err := w.Debug().Raw("show create table " + table).Scan(&result).Error; err != nil {
+	if err := w.Raw("show create table " + table).Scan(&result).Error; err != nil {
 		return "", err
 	}
 
@@ -44,7 +44,7 @@ func (w *Wrapper) TableSchema(table string) (string, error) {
 }
 
 func (w *Wrapper) CreateTable(table, ddl string) error {
-	if w.Debug().Migrator().HasTable(table) {
+	if w.Migrator().HasTable(table) {
 		return nil
 	}
 	if err := w.Debug().Exec(ddl).Error; err != nil {
@@ -66,7 +66,7 @@ func (w *Wrapper) ScanDataByTable(table string) chan map[string]interface{} {
 			close(dataChan)
 		}()
 
-		rows, err := w.Debug().Table(table).Rows()
+		rows, err := w.Table(table).Rows()
 		if err != nil {
 			return
 		}
