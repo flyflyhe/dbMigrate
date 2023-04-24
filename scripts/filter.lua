@@ -1,4 +1,4 @@
 function filter(table)
     print(table)
-    return 1
+    return 0
 end

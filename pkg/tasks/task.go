@@ -2,7 +2,7 @@ package tasks
 
 import (
 	"github.com/dbMigrate/v2/internal/db"
-	"github.com/dbMigrate/v2/internal/filter"
+	"github.com/dbMigrate/v2/internal/scripts"
 	"github.com/dbMigrate/v2/pkg/logging"
 	"strings"
 	"sync"
@@ -25,7 +25,7 @@ func (t *Task) InitTables() error {
 	} else {
 		filterResult := make([]string, 0)
 		for _, table := range tableList {
-			if filter.Filter(table) == filter.Allow {
+			if scripts.Filter(table) == scripts.Allow {
 				filterResult = append(filterResult, table)
 			}
 		}
@@ -43,12 +43,16 @@ func (t *Task) InitColumnDDL() error {
 	}
 	for _, table := range t.tableList {
 		t.tableColumn[table] = map[string]db.Columns{}
+
+		//ddl格式转换
 		if ddl, err := t.Source.TableSchema(table); err != nil {
 			return err
 		} else {
-			t.ddlMap[table] = t.Source.ChangeDDL(table, table, ddl)
+			changeDDL := t.Source.ChangeDDL(table, table, ddl)
+			t.ddlMap[table] = scripts.Convert(table, changeDDL)
 		}
 
+		//列类型保存
 		if columns, err := t.Source.TableColumns(t.SourceDatabase, table); err != nil {
 			return err
 		} else {

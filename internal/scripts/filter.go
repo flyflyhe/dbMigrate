@@ -1,4 +1,4 @@
-package filter
+package scripts
 
 import (
 	lua "github.com/yuin/gopher-lua"

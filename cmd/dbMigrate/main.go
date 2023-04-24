@@ -5,20 +5,22 @@ import (
 	"github.com/dbMigrate/v2/config"
 	"github.com/dbMigrate/v2/internal/db"
 	"github.com/dbMigrate/v2/internal/db/connection"
-	"github.com/dbMigrate/v2/internal/filter"
+	"github.com/dbMigrate/v2/internal/scripts"
 	"github.com/dbMigrate/v2/pkg/logging"
 	"github.com/dbMigrate/v2/pkg/tasks"
 	"os"
 )
 
 var (
-	configPath string
-	filterPath string
+	configPath  string
+	filterPath  string
+	convertPath string
 )
 
 func main() {
 	flag.StringVar(&configPath, "c", "config.yaml", "配置文件")
-	flag.StringVar(&filterPath, "filter", "filters/filter.lua", "过滤文件")
+	flag.StringVar(&filterPath, "filter", "scripts/filter.lua", "过滤文件")
+	flag.StringVar(&convertPath, "convert", "scripts/convert.lua", "ddl转换文件")
 	flag.Parse()
 	config.InitConfig(configPath)
 	logging.InitLogger(config.GetApp().Log)
@@ -26,7 +28,13 @@ func main() {
 	if _, err := os.Stat(filterPath); err != nil {
 		logging.Logger.Sugar().Info("未设置过滤文件")
 	} else {
-		filter.LoadFromFile(filterPath)
+		scripts.LoadFromFile(filterPath)
+	}
+
+	if _, err := os.Stat(convertPath); err != nil {
+		logging.Logger.Sugar().Info("未设置ddl转换文件")
+	} else {
+		scripts.LoadFromFileConvert(convertPath)
 	}
 
 	source, err := connection.InitDb(config.GetApp().DbConfig.Mysql0)
