@@ -20,7 +20,7 @@ func Convert(table, ddl string) string {
 	f := luaInstanceConvert.GetGlobal("convert")
 	luaInstanceConvert.Push(f)
 	luaInstanceConvert.Push(lua.LString(table)) // table name
-	luaInstanceConvert.Push(lua.LString(ddl))   // table name
+	luaInstanceConvert.Push(lua.LString(ddl))   // ddl
 
 	luaInstanceConvert.Call(2, 1)
 
