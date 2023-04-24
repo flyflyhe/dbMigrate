@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"github.com/dbMigrate/v2/internal/db"
+	"github.com/dbMigrate/v2/internal/filter"
 	"github.com/dbMigrate/v2/pkg/logging"
 	"strings"
 	"sync"
@@ -22,7 +23,13 @@ func (t *Task) InitTables() error {
 	if tableList, err := t.Source.AllTables(); err != nil {
 		return err
 	} else {
-		t.tableList = tableList
+		filterResult := make([]string, 0)
+		for _, table := range tableList {
+			if filter.Filter(table) == filter.Allow {
+				filterResult = append(filterResult, table)
+			}
+		}
+		t.tableList = filterResult
 		return nil
 	}
 }
