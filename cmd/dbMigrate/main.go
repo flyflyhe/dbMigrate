@@ -15,12 +15,15 @@ var (
 	configPath  string
 	filterPath  string
 	convertPath string
+	f           string
 )
 
 func main() {
 	flag.StringVar(&configPath, "c", "config.yaml", "配置文件")
 	flag.StringVar(&filterPath, "filter", "scripts/filter.lua", "过滤文件")
 	flag.StringVar(&convertPath, "convert", "scripts/convert.lua", "ddl转换文件")
+	flag.StringVar(&f, "f", "compare", "任务执行函数")
+
 	flag.Parse()
 	config.InitConfig(configPath)
 	logging.InitLogger(config.GetApp().Log)
@@ -54,9 +57,17 @@ func main() {
 		DstDatabase:    config.GetApp().DbConfig.Mysql1.Database,
 	}
 
-	if err := task.Start(); err != nil {
-		logging.Logger.Sugar().Error(err)
-	} else {
-		logging.Logger.Sugar().Info("同步完成")
+	if f == "task" {
+		if err := task.Start(); err != nil {
+			logging.Logger.Sugar().Error(err)
+		} else {
+			logging.Logger.Sugar().Info("同步完成")
+		}
+	} else if f == "compare" {
+		if err := task.Compare(); err != nil {
+			logging.Logger.Sugar().Error(err)
+		} else {
+			logging.Logger.Sugar().Info("同步完成")
+		}
 	}
 }

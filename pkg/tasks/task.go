@@ -121,6 +121,44 @@ func (t *Task) Start() error {
 	return nil
 }
 
+func (t *Task) compare() error {
+	for _, table := range t.tableList {
+		sC, err := t.Source.GetCount(table)
+		if err != nil {
+			logging.Logger.Sugar().Error(err)
+		}
+
+		dC, err := t.Source.GetCount(table)
+		if err != nil {
+			logging.Logger.Sugar().Error(err)
+		}
+
+		logging.Logger.Sugar().Info("sC:", sC, "dC", dC)
+		if sC != dC {
+			logging.Logger.Sugar().Error(table, "同步数据少")
+		} else {
+			logging.Logger.Sugar().Error(table, "同步数据正常")
+		}
+	}
+	return nil
+}
+
+func (t *Task) Compare() error {
+	if err := t.InitTables(); err != nil {
+		return err
+	}
+
+	if err := t.InitColumnDDL(); err != nil {
+		return err
+	}
+
+	if err := t.compare(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (t *Task) convertColumnValue(table string, data map[string]interface{}) {
 	column := t.tableColumn[table]
 	if table == "log" {

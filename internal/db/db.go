@@ -55,7 +55,7 @@ func (w *Wrapper) CreateTable(table, ddl string) error {
 }
 
 func (w *Wrapper) ChangeDDL(oTable, nTable, ddl string) string {
-	ddl = ddl[:strings.LastIndex(ddl, ")")+1]
+	ddl = ddl[:strings.LastIndex(ddl, "ENGINE")]
 	return strings.Replace(ddl, oTable, nTable, 1)
 }
 
@@ -83,6 +83,11 @@ func (w *Wrapper) ScanDataByTable(table string) chan map[string]interface{} {
 	}()
 
 	return dataChan
+}
+
+func (w *Wrapper) GetCount(table string) (total int64, err error) {
+	err = w.Table(table).Count(&total).Error
+	return
 }
 
 func (w *Wrapper) BatchInsert(table string, data []map[string]interface{}) error {
