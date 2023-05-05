@@ -128,7 +128,7 @@ func (t *Task) compare() error {
 			logging.Logger.Sugar().Error(err)
 		}
 
-		dC, err := t.Source.GetCount(table)
+		dC, err := t.Dst.GetCount(table)
 		if err != nil {
 			logging.Logger.Sugar().Error(err)
 		}
