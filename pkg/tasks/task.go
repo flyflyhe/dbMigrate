@@ -133,11 +133,11 @@ func (t *Task) compare() error {
 			logging.Logger.Sugar().Error(err)
 		}
 
-		logging.Logger.Sugar().Info("sC:", sC, "dC", dC)
+		logging.Logger.Sugar().Info("table:", table, "sC:", sC, "dC", dC)
 		if sC != dC {
 			logging.Logger.Sugar().Error(table, "同步数据少")
 		} else {
-			logging.Logger.Sugar().Error(table, "同步数据正常")
+			logging.Logger.Sugar().Info(table, "同步数据正常")
 		}
 	}
 	return nil
