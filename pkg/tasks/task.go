@@ -167,26 +167,50 @@ func (t *Task) convertColumnValue(table string, data map[string]interface{}) {
 	}
 	result := data
 	for k, v := range data {
-		if column[k].IsNullable != "YES" {
+		t := column[k].DataType
+		if t != "date" && t != "datetime" && t != "time" {
 			continue
 		}
-		t := column[k].DataType
-		if t == "date" {
-			if s, ok := v.(time.Time); ok {
-				if strings.Contains(s.String(), "0000-00-00") || strings.Contains(s.String(), "0001-01-01") {
-					result[k] = nil
+
+		if column[k].IsNullable != "YES" {
+			now, _ := time.Parse("2006-01-02", "2002-01-01")
+			if t == "date" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "0000-00-00") || strings.Contains(s.String(), "0001-01-01") {
+						result[k] = now
+					}
+				}
+			} else if t == "datetime" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "0000-00-00") || strings.Contains(s.String(), "0000-00-00 00:00:00") || strings.Contains(s.String(), "0001-01-01 00:00:00") {
+						result[k] = now
+					}
+				}
+			} else if t == "time" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "00:00:00") {
+						result[k] = now
+					}
 				}
 			}
-		} else if t == "datetime" {
-			if s, ok := v.(time.Time); ok {
-				if strings.Contains(s.String(), "0000-00-00 00:00:00") || strings.Contains(s.String(), "0001-01-01 00:00:00") {
-					result[k] = nil
+		} else {
+			if t == "date" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "0000-00-00") || strings.Contains(s.String(), "0001-01-01") {
+						result[k] = nil
+					}
 				}
-			}
-		} else if t == "time" {
-			if s, ok := v.(time.Time); ok {
-				if strings.Contains(s.String(), "00:00:00") || strings.Contains(s.String(), "00:00:00") {
-					result[k] = nil
+			} else if t == "datetime" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "0000-00-00") || strings.Contains(s.String(), "0000-00-00 00:00:00") || strings.Contains(s.String(), "0001-01-01 00:00:00") {
+						result[k] = nil
+					}
+				}
+			} else if t == "time" {
+				if s, ok := v.(time.Time); ok {
+					if strings.Contains(s.String(), "00:00:00") {
+						result[k] = nil
+					}
 				}
 			}
 		}
