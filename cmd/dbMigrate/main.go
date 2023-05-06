@@ -67,7 +67,9 @@ func main() {
 		if err := task.Compare(); err != nil {
 			logging.Logger.Sugar().Error(err)
 		} else {
-			logging.Logger.Sugar().Info("同步完成")
+			logging.Logger.Sugar().Info("比较完成")
 		}
+	} else {
+		logging.Logger.Sugar().Error("未定义的方法:", f)
 	}
 }
