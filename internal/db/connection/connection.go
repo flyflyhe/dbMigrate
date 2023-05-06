@@ -17,7 +17,7 @@ func InitDb(config config.MysqlConfig) (*gorm.DB, error) {
 	) + "&loc=Asia%2fShanghai"
 	fmt.Println("dsn:" + dsn)
 	gormLogger := logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
-		SlowThreshold:             400 * time.Millisecond,
+		SlowThreshold:             1000 * time.Millisecond,
 		LogLevel:                  logger.Warn,
 		IgnoreRecordNotFoundError: false,
 		Colorful:                  true,

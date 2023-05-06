@@ -85,6 +85,7 @@ func (t *Task) start() error {
 				t.convertColumnValue(table, data)
 				result = append(result, data)
 				if len(result) == 100 {
+					logging.Logger.Sugar().Info(table, ":insert:", len(result))
 					if err := t.Dst.BatchInsert(table, result); err != nil {
 						logging.Logger.Sugar().Error(err)
 						return

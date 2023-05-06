@@ -32,7 +32,7 @@ func (w *Wrapper) TableColumns(database, table string) ([]Columns, error) {
 
 func (w *Wrapper) TableSchema(table string) (string, error) {
 	var result map[string]interface{}
-	if err := w.Raw("show create table " + table).Scan(&result).Error; err != nil {
+	if err := w.Raw("show create table `" + table + "`").Scan(&result).Error; err != nil {
 		return "", err
 	}
 
