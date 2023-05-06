@@ -95,6 +95,7 @@ func (t *Task) start() error {
 			}
 
 			if len(result) > 0 {
+				logging.Logger.Sugar().Info(table, ":insert:", len(result))
 				if err := t.Dst.BatchInsert(table, result); err != nil {
 					logging.Logger.Sugar().Error(err)
 					return
