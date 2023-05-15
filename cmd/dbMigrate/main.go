@@ -16,12 +16,14 @@ var (
 	filterPath  string
 	convertPath string
 	f           string
+	b           int
 )
 
 func main() {
 	flag.StringVar(&configPath, "c", "config.yaml", "配置文件")
 	flag.StringVar(&filterPath, "filter", "scripts/filter.lua", "过滤文件")
 	flag.StringVar(&convertPath, "convert", "scripts/convert.lua", "ddl转换文件")
+	flag.IntVar(&b, "b", 100, "batch")
 	flag.StringVar(&f, "f", "compare", "任务执行函数")
 
 	flag.Parse()
@@ -58,7 +60,7 @@ func main() {
 	}
 
 	if f == "task" {
-		if err := task.Start(); err != nil {
+		if err := task.Start(b); err != nil {
 			logging.Logger.Sugar().Error(err)
 		} else {
 			logging.Logger.Sugar().Info("同步完成")

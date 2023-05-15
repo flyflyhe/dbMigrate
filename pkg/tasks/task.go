@@ -64,7 +64,7 @@ func (t *Task) InitColumnDDL() error {
 	return nil
 }
 
-func (t *Task) start() error {
+func (t *Task) start(b int) error {
 	for table, ddl := range t.ddlMap {
 		if err := t.Dst.CreateTable(table, ddl); err != nil {
 			return err
@@ -84,7 +84,7 @@ func (t *Task) start() error {
 			for data := range dataChan {
 				t.convertColumnValue(table, data)
 				result = append(result, data)
-				if len(result) == 100 {
+				if len(result) == b {
 					logging.Logger.Sugar().Info(table, ":insert:", len(result))
 					if err := t.Dst.BatchInsert(table, result); err != nil {
 						logging.Logger.Sugar().Error(err)
@@ -107,7 +107,7 @@ func (t *Task) start() error {
 	return nil
 }
 
-func (t *Task) Start() error {
+func (t *Task) Start(b int) error {
 	if err := t.InitTables(); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (t *Task) Start() error {
 		return err
 	}
 
-	if err := t.start(); err != nil {
+	if err := t.start(b); err != nil {
 		return err
 	}
 
